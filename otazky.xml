@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+    <question>
+        <text>Kolik prstů máme na ruce?</text>
+        <answers>
+            <an1>5</an1>
+            <an2>4</an2>
+            <an3>a</an3>
+            <an4>2</an4>
+            <anR>5</anR>
+        </answers>
+    </question>
+    <question>
+        <text>Kolik prstů máme na noze?</text>
+        <answers>
+            <an1>4</an1>
+            <an2>a</an2>
+            <an3>3</an3>
+            <an4>2</an4>
+            <anR>4</anR>
+        </answers>
+    </question>
+    <question>
+        <text>Kolik prstů máme na druhý ruce?</text>
+        <answers>
+            <an1>a</an1>
+            <an2>4</an2>
+            <an3>3</an3>
+            <an4>2</an4>
+            <anR>a</anR>
+        </answers>
+    </question>
+    <question>
+        <text>Kolik prstů máme na druhý noze?</text>
+        <answers>
+            <an1>n</an1>
+            <an2>4</an2>
+            <an3>3</an3>
+            <an4>2</an4>
+            <anR>n</anR>
+        </answers>
+    </question>
+</quiz>
