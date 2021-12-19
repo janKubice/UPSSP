@@ -10,6 +10,8 @@ from tkinter import messagebox as mb
 #import json to use json file for data
 import json
 
+from SP.client import Client
+
 #class to define the components of the GUI
 class Quiz:
 	# This is the first method which is called when a
@@ -201,6 +203,9 @@ class Quiz:
 
 # Create a GUI Window
 gui = Tk()
+
+cl = Client()
+cl.send_test()
 
 # set the size of the GUI Window
 gui.geometry("800x450")
