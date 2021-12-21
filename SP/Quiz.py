@@ -9,7 +9,7 @@ from tkinter import messagebox as mb
 
 #import json to use json file for data
 import json
-
+import threading
 from SP.client import Client
 
 #class to define the components of the GUI
@@ -204,8 +204,10 @@ class Quiz:
 # Create a GUI Window
 gui = Tk()
 
-cl = Client()
+cl = Client("pepa")
 cl.recieve_from_server()
+x = threading.Thread(target=cl.recieve_from_server, args=(1,))
+x.start()
 print("aaaaaaaaaaaaaaaaaaaaaaaa")
 
 # set the size of the GUI Window

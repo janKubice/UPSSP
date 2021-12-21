@@ -1,26 +1,27 @@
 import socket
-
+import time
 class Client:
     def __init__(self, name) -> None:
         self.HOST = '127.0.0.1'  # The server's hostname or IP address
         self.PORT = 10000        # The port used by the server
         self.name = name
-        self.id = self.get_id()
+        #socket který se připojí na server
+        self.soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.soc.connect((self.HOST, self.PORT))
 
 
     def send_test(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((self.HOST, self.PORT))
-            s.sendall(b'Hello, world')
-            data = s.recv(1024)
-
+        self.soc.sendall(b'Hello, world')
+        data = self.soc.recv(1024)
         print('Received', repr(data))
 
     def recieve_from_server(self):
         """Přijímání zpráv ze serveru
         """
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            data = s.recv(1024)
+        while(True):
+            data = self.soc.recv(1024)
+            time.sleep(1)
+            print('čekám')
     
     def request_id_player(self):
         """Žádá server o přiřazení id hráče
