@@ -205,7 +205,8 @@ class Quiz:
 gui = Tk()
 
 cl = Client()
-cl.send_test()
+cl.recieve_from_server()
+print("aaaaaaaaaaaaaaaaaaaaaaaa")
 
 # set the size of the GUI Window
 gui.geometry("800x450")

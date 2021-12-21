@@ -16,58 +16,61 @@ class Client:
 
         print('Received', repr(data))
 
-    def get_games(self):
-        """Vrátí aktuální hry ke kterým se lze připojit ve formátu pole odděleného ; :
-            id, name, p_max, p_actual, id, name....
+    def recieve_from_server(self):
+        """Přijímání zpráv ze serveru
+        """
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            data = s.recv(1024)
+    
+    def request_id_player(self):
+        """Žádá server o přiřazení id hráče
+            Returns: id_hráče
         """
         pass
 
-    def send_pixel(self, x: int , y:int) -> bool:
-        """Odešle na server požadavek na vyplnění pixelu, pokud projde vrátí True.
+    def connect_to_game(self, id_game):
+        """připojení do hry, vrací True/False
+            returns: True/False
+        """
+        pass
+
+    def reconnect_to_game(self, id_game):
+        """Znovu připojení do hry
+            return: True/False
+        """
+        pass
+
+    def create_new_game(self):
+        """Vytvoří novou hru
+            return: Id_hry
+        """
+        pass
+
+    def start_new_game(self):
+        """Startne novou hru = vygenerování otázek
+            return: True/False
+        """
+        pass
+
+    def send_quiz_answer(self, answer):
+        """Odešle na server odpověď na otázku
 
         Args:
-            x (int): x pixelu
-            y (int): y pixelu
-
-            Returns:
-                bool: jestli lze pixel vyplnit
+            answer a,b,c,d = co odpověděl
+        return: true/false = zda bylo odpověď přijatá serverem
         """
         pass
 
-    def get_item_to_draw(self) -> str:
-        """Dotáže se serveru na obrázek ke kreslení
-
-        Returns:
-            str: objekt který má hráč namalovat
+    def pause_game(self):
+        """Pauznutí hry
+            Return: True/False
         """
         pass
 
-    def send_quess(self, quess: str) -> bool:
-        """Odešle na server tip toho co si hráč myslí, pokud je to správně vrací True jinak False
-
-        Args:
-            quess (str): odhad hráče
-
-        Returns:
-            bool: zda je tip dobře
+    def leave_game(self):
+        """Opuštění hry
         """
         pass
 
-    def send_create_new_game(self) -> bool:
-        pass
-
-    def get_points(self) -> int:
-        """Dotáže se serveru na počet bodu hráče
-
-        Returns:
-            int: počet bodů
-        """
-        pass
-
-    def get_id(self) -> int:
-        """Získá od serveru id hráče
-
-        Returns:
-            int: id hráče
-        """
-        pass
+    
+ 
