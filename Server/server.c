@@ -93,10 +93,10 @@ void *connection_handler(void *socket_desc)
      
     //Send some messages to the client
     message = "Greetings! I am your connection handler\n";
-    write(sock , message , strlen(message));
+    //write(sock , message , strlen(message));
      
     message = "Now type something and i shall repeat what you type \n";
-    write(sock , message , strlen(message));
+    //write(sock , message , strlen(message));
      
     //Receive a message from client
     while( (read_size = recv(sock , client_message , CLIENT_MSG_SIZE , 0)) > 0 )
@@ -105,7 +105,7 @@ void *connection_handler(void *socket_desc)
         client_message[read_size] = '\0';
         printf("%s", client_message);	
         //Send the message back to client
-        write(sock , client_message , strlen(client_message));
+        //write(sock , client_message , strlen(client_message));
             
         //clear the message buffer
         memset(client_message, 0, CLIENT_MSG_SIZE);
