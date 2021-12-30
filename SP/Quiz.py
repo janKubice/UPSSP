@@ -10,22 +10,30 @@ from tkinter import messagebox as mb
 #import json to use json file for data
 import json
 import threading
-from SP.client import Client
+from client import Client
 
-#class to define the components of the GUI
 class Quiz:
 	# This is the first method which is called when a
 	# new object of the class is initialized. This method
 	# sets the question count to 0. and initialize all the
 	# other methoods to display the content and make all the
 	# functionalities available
-	def __init__(self):
+	def __init__(self, name):
 		
 		# set question number to 0
 		self.q_no=0
 		
 		# assigns ques to the display_question function to update later.
 		self.display_title()
+		self.display_menu()
+
+		self.client = Client(name)
+		x = threading.Thread(target=self.client.recieve_from_server, args=())
+		x.start()
+		self.client.send_msg()
+				
+
+	def show_q(self):
 		self.display_question()
 		
 		# opt_selected holds an integer value which is used for
@@ -44,10 +52,6 @@ class Quiz:
 		
 		# no of questions
 		self.data_size=len(question)
-		
-		# keep a counter of correct answers
-		self.correct=0
-
 
 	# This method is used to display the result
 	# It counts the number of correct and wrong answers
@@ -105,6 +109,8 @@ class Quiz:
 			self.display_question()
 			self.display_options()
 
+	def start_btn(self):
+		self.client.request_id_player()
 
 	# This method shows the two buttons on the screen.
 	# The first one is the next_button which moves to next question
@@ -158,6 +164,14 @@ class Quiz:
 		#placing the option on the screen
 		q_no.place(x=70, y=100)
 
+	def display_menu(self):
+		q_no = Label(gui, text="Menu", width=60, font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
+		q_no.place(x=70, y=100)
+
+		start_btn = Button(gui, text="Next",command=self.next_btn, width=10,bg="blue",fg="white",font=("ariel",16,"bold"))
+		
+		# palcing the button on the screen
+		start_btn.place(x=350,y=380)
 
 	# This method is used to Display Title
 	def display_title(self):
@@ -168,6 +182,8 @@ class Quiz:
 		
 		# place of the title
 		title.place(x=0, y=2)
+
+
 
 
 	# This method shows the radio buttons to select the Question
@@ -204,12 +220,6 @@ class Quiz:
 # Create a GUI Window
 gui = Tk()
 
-cl = Client("pepa")
-cl.recieve_from_server()
-x = threading.Thread(target=cl.recieve_from_server, args=(1,))
-x.start()
-print("aaaaaaaaaaaaaaaaaaaaaaaa")
-
 # set the size of the GUI Window
 gui.geometry("800x450")
 
@@ -226,7 +236,7 @@ options = (data['options'])
 answer = (data[ 'answer'])
 
 # create an object of the Quiz Class.
-quiz = Quiz()
+quiz = Quiz("Pepa")
 
 # Start the GUI
 gui.mainloop()
