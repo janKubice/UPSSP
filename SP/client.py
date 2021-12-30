@@ -14,8 +14,6 @@ class Client:
 
     def send_test(self):
         self.soc.sendall(b'Hello, world')
-        data = self.soc.recv(1024)
-        print('Received', repr(data))
 
     def send_msg(self, msg_code, msg_param = ''):
         self.soc.sendall(f'{self.id}|{msg_code}|{msg_param}'.encode())
@@ -32,6 +30,8 @@ class Client:
             if len(data) == 0:
                 continue
 
+	    #data = data.decode('UTF-8')
+	    
             data = data.split('|')
             msg_code = int(data[0])
             if msg_code == REQ_ID:

@@ -30,7 +30,7 @@ class Quiz:
 		self.client = Client(name)
 		x = threading.Thread(target=self.client.recieve_from_server, args=())
 		x.start()
-		self.client.send_msg()
+		self.client.send_msg(1,'test')
 				
 
 	def show_q(self):
@@ -226,8 +226,9 @@ gui.geometry("800x450")
 # set the title of the Window
 gui.title("GeeksforGeeks Quiz")
 
+
 # get the data from the json file
-with open('D:/Plocha stuffs/Škola - FAV/UPS/SP/data.json') as f:
+with open('/home/jan/UPS/UPSSP/SP/data.json') as f:
 	data = json.load(f)
 
 # set the question, options, and answer
