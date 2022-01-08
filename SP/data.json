@@ -1,9 +1,9 @@
 {
     "question": [
-      "Q1. What Indian city is the capital of two states?",
-      "Q2. Which city is the capital of India?",
-      "Q3. Smallest State of India?",
-      "Q4. Where is Taj Mahal Located?"
+      "Q1. Kdo má největšího pindíka?",
+      "Q2. Kdo je největší královna pindíků?",
+      "Q3. Malá nebo velká?",
+      "Q4. Jsi královna!"
     ],
     "answer": [
       1,
@@ -13,25 +13,25 @@
     ],
     "options": [
   
-      ["Chandigarh",
-        "Kolkata",
-        "Delhi",
-        "Banglore"
+      ["Já",
+        "Já znova",
+        "Já potřetí",
+        "Já počtvrté"
       ],
-      ["Jaipur",
-        "Delhi",
-        "Chennai",
-        "Mumbai"
+      ["Teď královnou jsem já",
+        "špatná odpověď",
+        "špatná odpověď",
+        "špatná odpověď"
       ],
-      ["Rajasthan",
-        "Punjab",
-        "Goa",
-        "Bihar"
+      ["Všechny jsou krásný #správnáodpověď #milujsvojivulvu",
+        "Malá",
+        "Střední",
+        "Velká"
       ],
-      ["Lucknow",
-        "Agra",
-        "Bhopal",
-        "Delhi"
+      ["To teda jsem",
+        "Přesně tak!",
+        "Moje vulva je královna",
+        "Všechny jsme královny!"
       ]
     ]
   }

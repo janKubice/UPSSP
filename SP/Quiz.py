@@ -22,15 +22,15 @@ class Quiz:
 		
 		# set question number to 0
 		self.q_no=0
-		
+
+		self.client = Client(name, self)
+		#x = threading.Thread(target=self.client.recieve_from_server, args=())
+		#x.start()
+		#self.client.send_msg(1,'test')
+
 		# assigns ques to the display_question function to update later.
 		self.display_title()
 		self.display_menu()
-
-		self.client = Client(name)
-		x = threading.Thread(target=self.client.recieve_from_server, args=())
-		x.start()
-		self.client.send_msg(1,'test')
 				
 
 	def show_q(self):
@@ -166,24 +166,30 @@ class Quiz:
 
 	def display_menu(self):
 		q_no = Label(gui, text="Menu", width=60, font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
-		q_no.place(x=70, y=100)
+		q_no.place(x=350, y=100)
 
-		start_btn = Button(gui, text="Next",command=self.next_btn, width=10,bg="blue",fg="white",font=("ariel",16,"bold"))
-		
-		# palcing the button on the screen
+		start_btn = Button(gui, text="Přejít do red roomu",command=self.client.request_id_player, width=30,bg="red",fg="white",font=("ariel",16,"bold"))
 		start_btn.place(x=350,y=380)
+
+	def hide_menu(self):
+		pass
+
+	def connect_input(self):
+		entry = Entry(gui)
+		entry.place(x=350,y=250)
+
+		connect_btn = Button(gui, text="Vsunout se do hry",command= lambda: self.client.connect_to_game(entry.get()), width=30,bg="purple",fg="white",font=("ariel",16,"bold"))
+		connect_btn.place(x=350,y=380)
+
 
 	# This method is used to Display Title
 	def display_title(self):
 		
 		# The title to be shown
-		title = Label(gui, text="GeeksforGeeks QUIZ",
-		width=50, bg="green",fg="white", font=("ariel", 20, "bold"))
+		title = Label(gui, text="Milionový pindík", width=50, bg="pink",fg="white", font=("ariel", 20, "bold"))
 		
 		# place of the title
 		title.place(x=0, y=2)
-
-
 
 
 	# This method shows the radio buttons to select the Question
@@ -224,17 +230,20 @@ gui = Tk()
 gui.geometry("800x450")
 
 # set the title of the Window
-gui.title("GeeksforGeeks Quiz")
+gui.title("Kvízeček pro pindíkový královny")
 
 
 # get the data from the json file
-with open('/home/jan/UPS/UPSSP/SP/data.json') as f:
+#with open('/home/jan/UPS/UPSSP/SP/data.json') as f:
+#	data = json.load(f)
+
+with open('SP/data.json') as f:
 	data = json.load(f)
 
 # set the question, options, and answer
 question = (data['question'])
 options = (data['options'])
-answer = (data[ 'answer'])
+answer = (data['answer'])
 
 # create an object of the Quiz Class.
 quiz = Quiz("Pepa")
