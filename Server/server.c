@@ -488,9 +488,8 @@ void *connection_handler(void *socket_desc)
                 free(msg);
                 clean_room(game_id);
             }
-
+            //pokud se odpojuje někdo v lobby, zde se odešle nový počet hráčů ostatním klientům
             if(games[game_id].state == STATE_IN_LOBBY){
-                printf("AHOOOJ");
                 char text_number[8];
                 sprintf(text_number, "%d", games[game_id].number_players);
 
