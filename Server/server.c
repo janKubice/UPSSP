@@ -1,114 +1,496 @@
-/*
-    C socket server example, handles multiple clients using threads
-    Compile
-    gcc server.c -lpthread -o server
-*/
- 
+/**
+ */ 
+
 #include<stdio.h>
-#include<string.h>    //strlen
-#include<stdlib.h>    //strlen
+#include<string.h>    
+#include<stdlib.h>    
 #include<sys/socket.h>
-#include<arpa/inet.h> //inet_addr
-#include<unistd.h>    //write
-#include<pthread.h> //for threading , link with lpthread
-#define CLIENT_MSG_SIZE 50
+#include<arpa/inet.h> 
+#include<unistd.h> 
+#include<pthread.h>
+#include<time.h>
 
 
-//the thread function
+#define CLIENT_MSG_SIZE 512
+
+#define REQ_ID "1"
+#define CONNECT_TO_GAME "2"
+#define RECONNECT_TO_GAME "3"
+#define CREATE_NEW_ROOM "4"
+#define START_GAME "5"
+#define SEND_QUIZ_ANSWER "6"
+#define PAUSE_GAME "7"
+#define LEAVE_GAME "8"
+#define NEXT_QUESTION "9"
+#define BACK_TO_MENU "10"
+#define SHOW_TABLE "11"
+
+
+#define STATE_IN_LOBBY 1
+#define STATE_IN_GAME 2
+#define STATE_IN_PAUSE 3
+#define STATE_ENDED 4
+
+#define OK "100"
+#define ERR "-1"
+#define NUMBER_OF_PLAYERS 90
+#define NUMBER_OF_ROOMS 30
+#define NUMBER_OF_QUESTIONS 1
+
+
 void *connection_handler(void *);
- 
+
+
+typedef struct Player
+{
+    //id hráče
+    int id_p; 
+    // počet bodů
+    int points;
+    //socket = abych věděla kam posílat zprávy
+    int socket;
+} player;
+
+typedef struct Game
+{
+    //id místnosti
+    int id_r;
+
+    int availability[3];
+    //pole hráčů
+    player array_p[3];
+    //stav hry
+    int state;
+    //počet hráčů ve hře
+
+    int number_players;
+    int q_ids[NUMBER_OF_QUESTIONS];
+    //v jakém kole je hra
+    int round;
+
+    long time;
+
+} game;
+
+typedef struct Question
+{
+    char *question;
+    char *ans1;
+    char *ans2;
+    char *ans3;
+    char *ans4;
+    int correct;
+
+} question;
+
+player* players = NULL;
+game* games = NULL;
+question* questions = NULL;
+
+void* sleep_time(int game_id){
+    sleep(5);
+    next_round(game_id);
+}
+
+/**
+ * @brief Vstupni bod programu
+ * 
+ * @param argc pocet argumentu
+ * @param argv pole argumentu
+ * @return int navratova hodnota programu
+ */
 int main(int argc , char *argv[])
 {
+    players = calloc(NUMBER_OF_PLAYERS,sizeof(player));
+    games = calloc(NUMBER_OF_ROOMS, sizeof(game));
+
+    questions = calloc(NUMBER_OF_QUESTIONS, sizeof(question));
+
+    questions[0].question = "Jakou barvu má sluníčko?";
+    questions[0].ans1 = "modrá";
+    questions[0].ans2 = "žlutá";
+    questions[0].ans3 = "černá";
+    questions[0].ans4 = "růžová";
+    questions[0].correct = 2;
+/**
+    questions[1].question = "Jakou barvu má nebe?";
+    questions[1].ans1 = "modrá";
+    questions[1].ans2 = "žlutá";
+    questions[1].ans3 = "černá";
+    questions[1].ans4 = "růžová";
+    questions[1].correct = 1;
+
+
+    questions[2].question = "Jakou barvu má tráva?";
+    questions[2].ans1 = "modrá";
+    questions[2].ans2 = "žlutá";
+    questions[2].ans3 = "černá";
+    questions[2].ans4 = "zelená";
+    questions[2].correct = 4;
+
+
+    questions[3].question = "Jakou barvu mají oblaka?";
+    questions[3].ans1 = "bílá";
+    questions[3].ans2 = "žlutá";
+    questions[3].ans3 = "modrá";
+    questions[3].ans4 = "zelená";
+    questions[3].correct = 1;
+*/
+
+    int i;
+    for(i = 0; i < NUMBER_OF_PLAYERS; i++){
+        players[i].id_p=-1;
+    }
+
+
+    int h;
+    for(i = 0; i < NUMBER_OF_ROOMS; i++){
+        int questions[NUMBER_OF_QUESTIONS];
+        int q_len = 0;
+        int duplicate = 0;
+
+        int j;
+        while(q_len < NUMBER_OF_QUESTIONS){
+            duplicate = 0;
+            int rnd = rand() % NUMBER_OF_QUESTIONS;
+
+            for (j = 0; j < q_len; j++){
+                if (questions[j] == rnd){
+                    duplicate = 1;
+                }
+            }
+
+            if (duplicate == 0){
+                questions[q_len] = rnd;
+                q_len++;
+            }
+        }
+
+        games[i].id_r = -1;
+        games[i].round = 0;
+        memcpy(games[i].q_ids, questions , sizeof(games[i].q_ids));
+        for (h = 0;h < 3; h++){
+            games[i].availability[h] = 0;
+        }
+    }
+
+    
     int socket_desc , client_sock , c;
     struct sockaddr_in server , client;
      
-    //Create socket
+    //vytvoreni socketu
     socket_desc = socket(AF_INET , SOCK_STREAM , 0);
     if (socket_desc == -1)
     {
-        printf("Could not create socket");
+        printf("Could not create socket\n");
     }
-    puts("Socket created");
+    printf("Socket created\n");
      
-    //Prepare the sockaddr_in structure
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY;
     server.sin_port = htons( 10000 );
      
-    //Bind
     if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
     {
-        //print the error message
-        perror("bind failed. Error");
+        printf("bind failed. Error\n");
         return 1;
     }
-    puts("bind done");
-     
-    //Listen
+    printf("bind done\n");
+
     listen(socket_desc , 3);
-     
-    //Accept and incoming connection
-    puts("Waiting for incoming connections...");
-    c = sizeof(struct sockaddr_in);
-     
-     
-    //Accept and incoming connection
-    puts("Waiting for incoming connections...");
+
     c = sizeof(struct sockaddr_in);
 	pthread_t thread_id;
 	
     while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
-        puts("Connection accepted");
-         
+        printf("Connection accepted\n");
         if( pthread_create( &thread_id , NULL ,  connection_handler , (void*) &client_sock) < 0)
         {
-            perror("could not create thread");
-            return 1;
+            printf("could not create thread\n");
         }
-         
-        //Now join the thread , so that we dont terminate before the thread
-        //pthread_join( thread_id , NULL);
-        puts("Handler assigned");
+        printf("Handler assigned\n");
+
+       
     }
      
     if (client_sock < 0)
     {
-        perror("accept failed");
+        printf("accept failed\n");
         return 1;
     }
      
     return 0;
 }
- 
-/*
- * This will handle connection for each client
- * */
+
+
+/**
+ * @brief Funkce je spustena ve vlastnim vlakne a obstarava jednoho klienta, zpracovava prijmute zpravy
+ * 
+ * @param socket_desc socket uzivatele
+ * @return void* 
+ */
 void *connection_handler(void *socket_desc)
 {
-    //Get the socket descriptor
     int sock = *(int*)socket_desc;
     int read_size;
-    char *message , client_message[30];
-     
-    //Send some messages to the client
-    message = "Greetings! I am your connection handler\n";
-    //write(sock , message , strlen(message));
-     
-    message = "Now type something and i shall repeat what you type \n";
-    //write(sock , message , strlen(message));
-     
-    //Receive a message from client
+    char *message , client_message[CLIENT_MSG_SIZE];
+ 
+    //prijimani zpravy
     while( (read_size = recv(sock , client_message , CLIENT_MSG_SIZE , 0)) > 0 )
     {
         //end of string marker
         client_message[read_size] = '\0';
-        printf("%s", client_message);	
-        //Send the message back to client
-        //write(sock , client_message , strlen(client_message));
+        printf("server prijmul: %s\n", client_message);	
+		
+        int i = 0;
+        char *p = strtok(client_message, ",");
+        char *params[3];
+
+        while (p != NULL)
+        {
+            params[i++] = p;
+            p = strtok(NULL, ",");
+        }
+
+        
+        if (strcmp(params[1], CREATE_NEW_ROOM) == 0){
+            int i;
+            for(i = 0; i < NUMBER_OF_ROOMS; i++){
+                if(games[i].id_r == -1){
+                    games[i].id_r = i;
+                    games[i].state = STATE_IN_LOBBY;
+                    games[i].array_p[0] = players[atoi(params[0])];
+                    games[i].number_players = 1;
+                    games[i].availability[0] = 1;
+                    break;
+                }
+            }
+            char text_number[8];
+            sprintf(text_number, "%d", i);
+            printf("id mistnosti: %s\n", text_number);
+
+            char *msg = malloc(strlen("4,") + strlen(text_number) + 1);
+            memcpy(msg, "4,", strlen("4,"));
+            memcpy(msg + strlen("4,"), text_number, strlen(text_number));
+            memcpy(msg + strlen("4,") + strlen(text_number), ";1", strlen(";1") + 1);
+            puts("Odesilam:");
+            puts(msg);
+            write(sock, msg, sizeof(msg));
+        }
+        else if (strcmp(params[1], START_GAME) == 0){
+            int player_id = atoi(params[0]);
+            int g;
+            int game_id;
+            puts("id hrace:");
+            char text_number[8];
+            sprintf(text_number, "%d", player_id);
+            puts(text_number);
+
+            for (g = 0; g < NUMBER_OF_ROOMS;g++){
+                if(games[g].array_p[0].id_p == player_id){
+                    game_id = g;
+                    break;
+                }
+            }
+            printf("Id hry: %d\n", game_id);
+
+            games[g].time = 5000;
+            games[g].state = STATE_IN_GAME;
+
+            question q = questions[games[game_id].q_ids[games[game_id].round]];
+
+            char *msg = malloc(strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-")+ strlen(q.ans2) + strlen("-") + strlen(q.ans3) + strlen("-")+ strlen(q.ans4) + 1);
+            memcpy(msg, "5,", strlen("5,"));
+            memcpy(msg + strlen("5,"), q.question, strlen(q.question)); //otazka
+            memcpy(msg + strlen("5,") + strlen(q.question), ";", strlen(";")); 
+            memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";"), q.ans1, strlen(q.ans1)); //odpoved 1
+            memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1), "-", strlen("-"));
+            memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-"), q.ans2, strlen(q.ans2)); //odpoved 2
+            memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2), "-", strlen("-")); 
+            memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2) + strlen("-"), q.ans3, strlen(q.ans3)); // odpoved 3 
+            memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2) + strlen("-") + strlen(q.ans3), "-", strlen("-")); 
+            memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2) + strlen("-") + strlen(q.ans3)+ strlen("-"), q.ans4, strlen(q.ans4) + 1); // odpoved 4
+            puts("Odesilam:");
+            puts(msg);
+
+            int p;
+            for (p = 0; p < 3; p++){
+                if (games[game_id].availability[p] == 1){
+                    write(games[game_id].array_p[p].socket, msg, strlen(msg));
+                }       
+            }
+        }
+        else if (strcmp(params[1], CONNECT_TO_GAME) == 0){
+            int game_id = atoi(params[2]);
+
+            if(games[game_id].id_r == -1){
+                send_error("Špatné id", sock);
+                return;
+            }
+            else if(games[game_id].number_players == 3){
+                send_error("Plná místnost", sock);
+                return;
+            } 
+            else if(games[game_id].state == STATE_IN_GAME) {
+                puts("Hra už jede");
+                return;
+            }
             
-        //clear the message buffer
-        memset(client_message, 0, CLIENT_MSG_SIZE);
+            int i;
+            //od jedný, když nula je admin a odpojí se, hra bájbáj
+            for (i = 1; i < 3; i++){
+                if (games[game_id].availability[i] == 0){
+                    games[game_id].array_p[i] = players[atoi(params[0])];
+                    games[game_id].number_players++;
+                    games[game_id].availability[i] = 1;
+                    break;
+                }  
+            } 
+
+            char text_number[8];
+            sprintf(text_number, "%d", games[game_id].number_players);
+            printf("pocet hracu: %s\n", text_number);
+
+            char *msg = malloc(strlen("2,") + strlen(text_number) + 1);
+            memcpy(msg, "2,", strlen("2,"));
+            memcpy(msg + strlen("2,"), text_number, strlen(text_number)+1);
+            puts("Odesilam:");
+            puts(msg);
+
+            int p;
+            for (p = 1; p < 3; p++){
+                if (games[game_id].availability[p] == 1){
+                    write(games[game_id].array_p[p].socket, msg, sizeof(msg));
+                }       
+            }
+
+            char game_id_text[8];
+            sprintf(game_id_text, "%d", game_id);
+
+            char *msg_for_admin = malloc(strlen("4,") + strlen(game_id_text) + strlen(text_number) + 1);
+            memcpy(msg_for_admin, "4,", strlen("4,"));
+            memcpy(msg_for_admin + strlen("4,"), game_id_text, strlen(game_id_text));
+            memcpy(msg_for_admin + strlen("4,") + strlen(game_id_text), ";", strlen(";"));
+            memcpy(msg_for_admin + strlen("4,") + strlen(game_id_text) + strlen(";"), text_number, strlen(text_number)+1);
+            puts("Odesilam:");
+            puts(msg_for_admin);
+            write(games[game_id].array_p[0].socket, msg_for_admin, sizeof(msg_for_admin));
+
+        } 
+        else if (strcmp(params[1], SEND_QUIZ_ANSWER) == 0){
+            int player_id = atoi(params[0]);
+            int answer = atoi(params[2]);
+            int game_id;
+
+            int g;
+            for (g = 0; g < NUMBER_OF_ROOMS;g++){
+                if(games[g].array_p[0].id_p = player_id){
+                    game_id = g;
+                    break;
+                }
+            }
+
+            if (answer == questions[games[game_id].q_ids[games[game_id].round]].correct){
+                players[player_id].points += 1;
+                char correct[8];
+                sprintf(correct, "%d", questions[games[game_id].q_ids[games[game_id].round]].correct);
+
+                int p;
+                for (p = 0; p < 3; p++){
+                    if (games[game_id].availability[p] == 1){
+                        char points[8];
+                        sprintf(points, "%d", players[games[game_id].array_p[p].id_p].points);
+                        
+                        
+                        char *msg = malloc(strlen("6,") + strlen(points) + strlen(";") + strlen(correct) + 1);
+                        memcpy(msg, "6,", strlen("6,"));
+                        memcpy(msg + strlen("6,"), points, strlen(points));
+                        memcpy(msg + strlen("6,") + strlen(points), ";", strlen(";"));
+                        memcpy(msg + strlen("6,") + strlen(points) + strlen(";"), correct, strlen(correct) + 1);
+                        puts("Odesilam:");
+                        puts(msg);
+                        write(games[game_id].array_p[p].socket, msg, sizeof(msg));
+                    }       
+                }
+                pthread_t thread;
+                pthread_create(&thread, NULL, sleep_time, game_id);    
+            }
+
+
+            
+        }
+        else if (strcmp(params[1], LEAVE_GAME) == 0){
+            int player_id = atoi(params[0]);
+            int g, i, game_id;
+            int is_admin = 0;
+
+            for (g = 0; g < NUMBER_OF_ROOMS;g++){
+                for(i = 0; i < 3; i++){
+                    if(games[g].array_p[i].id_p == player_id){
+                        game_id = g;
+                        games[game_id].availability[i] = 0;
+
+                        if (i == 0){
+                            is_admin = 1;
+                        }
+                        break;
+                    }
+                }   
+            }
+
+            if (is_admin == 1){
+                char* msg = malloc(strlen(BACK_TO_MENU) + strlen(",") + strlen("x") + 1);
+                memcpy(msg, BACK_TO_MENU, strlen(BACK_TO_MENU));
+                memcpy(msg + strlen(BACK_TO_MENU), ",", strlen(","));
+                memcpy(msg + strlen(BACK_TO_MENU) + strlen(","), "x", strlen("x") + 1);
+
+                int p;
+                for (p = 1; p < 3; p++){
+                    if (games[game_id].availability[p] == 1){
+                        write(games[game_id].array_p[p].socket, msg, strlen(msg));
+                    }       
+                }
+            }
+           
+
+        } 
+        else if (strcmp(params[1], REQ_ID) == 0){
+            int i;
+            int rec = 0;
+            for(i = 1; i < NUMBER_OF_PLAYERS; i++){
+                if(players[i].id_p != -1) {
+                    if(players[i].socket = sock){
+                        //reconnect(i);
+                        //rec = 1;
+                        break;
+                    }
+                }
+            }
+
+            if (rec == 0){
+                for(i = 1; i < NUMBER_OF_PLAYERS; i++){
+                    if(players[i].id_p == -1){
+                        players[i].id_p = i;
+                        players[i].socket = sock;
+                        players[i].points = 0;
+                        break;
+                    }
+                }
+                char text_number[8];
+                sprintf(text_number, "%d", i);
+                printf("id: %s\n", text_number);
+
+                char *msg = malloc(strlen("1,") + strlen(text_number) + 1);
+                memcpy(msg, "1,", strlen("1,"));
+                memcpy(msg + strlen("1,"), text_number, strlen(text_number)+1);
+                puts("Odesilam:");
+                puts(msg);
+                write(sock, msg, sizeof(msg));
+            }
+        }
+      
+	    memset(client_message, 0, CLIENT_MSG_SIZE);
     }
      
     if(read_size == 0)
@@ -123,3 +505,132 @@ void *connection_handler(void *socket_desc)
          
     return 0;
 } 
+
+void reconnect(int player_id){
+    int g, i, game_id;
+
+    for (g = 0; g < NUMBER_OF_ROOMS;g++){
+        for(i = 0; i < 3; i++){
+            if(games[g].array_p[i].id_p == player_id){
+                game_id = g;
+                break;
+            }
+        }   
+    }
+    
+    if(games[game_id].state == STATE_IN_LOBBY){
+        char text_number[8];
+        sprintf(text_number, "%d", games[game_id].number_players);
+        printf("pocet hracu: %s\n", text_number);
+
+        char *msg = malloc(strlen("2,") + strlen(text_number) + 1);
+        memcpy(msg, "2,", strlen("2,"));
+        memcpy(msg + strlen("2,"), text_number, strlen(text_number)+1);
+        puts("Odesilam:");
+        puts(msg); 
+
+        write(players[player_id].socket, msg, strlen(msg));
+    }
+    else if (games[game_id].state == STATE_IN_GAME){
+        question q = questions[games[game_id].q_ids[games[game_id].round]];
+
+        char *msg = malloc(strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-")+ strlen(q.ans2) + strlen("-") + strlen(q.ans3) + strlen("-")+ strlen(q.ans4) + 1);
+        memcpy(msg, "5,", strlen("5,"));
+        memcpy(msg + strlen("5,"), q.question, strlen(q.question)); //otazka
+        memcpy(msg + strlen("5,") + strlen(q.question), ";", strlen(";")); 
+        memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";"), q.ans1, strlen(q.ans1)); //odpoved 1
+        memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1), "-", strlen("-"));
+        memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-"), q.ans2, strlen(q.ans2)); //odpoved 2
+        memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2), "-", strlen("-")); 
+        memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2) + strlen("-"), q.ans3, strlen(q.ans3)); // odpoved 3 
+        memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2) + strlen("-") + strlen(q.ans3), "-", strlen("-")); 
+        memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2) + strlen("-") + strlen(q.ans3)+ strlen("-"), q.ans4, strlen(q.ans4) + 1); // odpoved 4
+        puts("Odesilam:");
+        puts(msg);
+
+        write(players[player_id].socket, msg, strlen(msg));
+    }
+}
+
+void send_error(char* msg, int sock){
+    char* m = malloc(strlen("-1,") + strlen(msg) + 1);
+    memcpy(m, "-1,", strlen("-1,"));
+    memcpy(m + strlen("-1,"), msg, strlen(msg) + 1);
+    write(sock, m, strlen(m));
+}
+
+void next_round(int room){
+    games[room].time = 5000;
+    games[room].round += 1;
+    if (games[room].round == NUMBER_OF_QUESTIONS){
+        send_points(room);
+        return;
+    }
+
+    question q = questions[games[room].q_ids[games[room].round]];
+
+    char *msg = malloc(strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-")+ strlen(q.ans2) + strlen("-") + strlen(q.ans3) + strlen("-")+ strlen(q.ans4) + 1);
+    memcpy(msg, "5,", strlen("5,"));
+    memcpy(msg + strlen("5,"), q.question, strlen(q.question)); //otazka
+    memcpy(msg + strlen("5,") + strlen(q.question), ";", strlen(";")); 
+    memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";"), q.ans1, strlen(q.ans1)); //odpoved 1
+    memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1), "-", strlen("-"));
+    memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-"), q.ans2, strlen(q.ans2)); //odpoved 2
+    memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2), "-", strlen("-")); 
+    memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2) + strlen("-"), q.ans3, strlen(q.ans3)); // odpoved 3 
+    memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2) + strlen("-") + strlen(q.ans3), "-", strlen("-")); 
+    memcpy(msg + strlen("5,") + strlen(q.question) + strlen(";") + strlen(q.ans1) + strlen("-") + strlen(q.ans2) + strlen("-") + strlen(q.ans3)+ strlen("-"), q.ans4, strlen(q.ans4) + 1); // odpoved 4
+    puts("Odesilam:");
+    puts(msg);
+
+    int p;
+    for (p = 0; p < 3; p++){
+        if (games[room].availability[p] == 1){
+            write(games[room].array_p[p].socket, msg, strlen(msg));
+        }       
+    }
+}
+
+void send_points(int room){
+    int max_points, i, id_max_points;
+    max_points = games[room].array_p[0].points;
+    id_max_points = 0;
+    for(i = 1; i < 3; i++){
+        if(max_points < games[room].array_p[i].points){
+            max_points = games[room].array_p[i].points;
+            id_max_points = i;
+        }
+    }
+
+    int p;
+    for (p = 0; p < 3; p++){
+        if (games[room].availability[p] != -1){
+            if(p != id_max_points){
+                char *msg = malloc(strlen("11,") + strlen("Prohrál jsi") + 1);
+                memcpy(msg, "11,", strlen("11,"));
+                memcpy(msg + strlen("11,"), "Prohrál jsi", strlen("Prohrál jsi"));
+                write(games[room].array_p[p].socket, msg, strlen(msg));
+            }
+            else{
+                char *msg = malloc(strlen("11,") + strlen("Vyhrál jsi") + 1);
+                memcpy(msg, "11,", strlen("11,"));
+                memcpy(msg + strlen("11,"), "Vyhrál jsi", strlen("Vyhrál jsi"));
+                write(games[room].array_p[p].socket, msg, strlen(msg));
+            }
+        } 
+        
+    }
+
+    clean_room(room);
+}
+
+void clean_room(int room){
+    int i;
+    for(i = 0; i < 3; i++){
+        games[room].availability[i] = 0; 
+    }
+    games[room].number_players = 0;
+    games[room].round = 0;
+    games[room].state = -1;
+    games[room].id_r = -1;
+}
