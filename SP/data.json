@@ -1,9 +1,9 @@
 {
     "question": [
-      "Q1. Kdo má největšího pindíka?",
-      "Q2. Kdo je největší královna pindíků?",
-      "Q3. Malá nebo velká?",
-      "Q4. Jsi královna!"
+      "Q1. What Indian city is the capital of two states?",
+      "Q2. Which city is the capital of India?",
+      "Q3. Smallest State of India?",
+      "Q4. Where is Taj Mahal Located?"
     ],
     "answer": [
       1,
@@ -13,25 +13,25 @@
     ],
     "options": [
   
-      ["Já",
-        "Já znova",
-        "Já potřetí",
-        "Já počtvrté"
+      ["Chandigarh",
+        "Kolkata",
+        "Delhi",
+        "Banglore"
       ],
-      ["Teď královnou jsem já",
-        "špatná odpověď",
-        "špatná odpověď",
-        "špatná odpověď"
+      ["Jaipur",
+        "Delhi",
+        "Chennai",
+        "Mumbai"
       ],
-      ["Všechny jsou krásný #správnáodpověď #milujsvojivulvu",
-        "Malá",
-        "Střední",
-        "Velká"
+      ["Rajasthan",
+        "Punjab",
+        "Goa",
+        "Bihar"
       ],
-      ["To teda jsem",
-        "Přesně tak!",
-        "Moje vulva je královna",
-        "Všechny jsme královny!"
+      ["Lucknow",
+        "Agra",
+        "Bhopal",
+        "Delhi"
       ]
     ]
   }

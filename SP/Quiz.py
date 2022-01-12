@@ -22,27 +22,19 @@ class Quiz:
 		
 		# set question number to 0
 		self.q_no=0
-
-		self.client = Client(name, self)
-		#x = threading.Thread(target=self.client.recieve_from_server, args=())
-		#x.start()
-		#self.client.send_msg(1,'test')
-
+		
 		# assigns ques to the display_question function to update later.
 		self.display_title()
 		self.display_menu()
 
-		self.right_btn = Button()
-		self.left_btn = Button()
-		self.text = Label()
-		self.text_another = Label()
-		self.text_input = Entry()
+		self.client = Client(name)
+		x = threading.Thread(target=self.client.recieve_from_server, args=())
+		x.start()
+		self.client.send_msg(1,'test')
 				
 
-	def show_q(self, question, answers):
-		self.right_btn.config(width=0, text='')
-		self.right_btn.place(x=-100, y=-100)
-		self.display_question(question)
+	def show_q(self):
+		self.display_question()
 		
 		# opt_selected holds an integer value which is used for
 		# selected option in a question.
@@ -53,7 +45,7 @@ class Quiz:
 		self.opts=self.radio_buttons()
 		
 		# display options for the current question
-		self.display_options(answers)
+		self.display_options()
 		
 		# displays the button for next and exit.
 		self.buttons()
@@ -61,8 +53,61 @@ class Quiz:
 		# no of questions
 		self.data_size=len(question)
 
-	def send_answer_btn(self):
-		self.client.send_quiz_answer(self.opt_selected.get())
+	# This method is used to display the result
+	# It counts the number of correct and wrong answers
+	# and then display them at the end as a message Box
+	def display_result(self):
+		
+		# calculates the wrong count
+		wrong_count = self.data_size - self.correct
+		correct = f"Correct: {self.correct}"
+		wrong = f"Wrong: {wrong_count}"
+		
+		# calcultaes the percentage of correct answers
+		score = int(self.correct / self.data_size * 100)
+		result = f"Score: {score}%"
+		
+		# Shows a message box to display the result
+		mb.showinfo("Result", f"{result}\n{correct}\n{wrong}")
+
+
+	# This method checks the Answer after we click on Next.
+	def check_ans(self, q_no):
+		
+		# checks for if the selected option is correct
+		if self.opt_selected.get() == answer[q_no]:
+			# if the option is correct it return true
+			return True
+
+	# This method is used to check the answer of the
+	# current question by calling the check_ans and question no.
+	# if the question is correct it increases the count by 1
+	# and then increase the question number by 1. If it is last
+	# question then it calls display result to show the message box.
+	# otherwise shows next question.
+	def next_btn(self):
+		
+		# Check if the answer is correct
+		if self.check_ans(self.q_no):
+			
+			# if the answer is correct it increments the correct by 1
+			self.correct += 1
+		
+		# Moves to next Question by incrementing the q_no counter
+		self.q_no += 1
+		
+		# checks if the q_no size is equal to the data size
+		if self.q_no==self.data_size:
+			
+			# if it is correct then it displays the score
+			self.display_result()
+			
+			# destroys the GUI
+			gui.destroy()
+		else:
+			# shows the next question
+			self.display_question()
+			self.display_options()
 
 	def start_btn(self):
 		self.client.request_id_player()
@@ -78,10 +123,11 @@ class Quiz:
 		
 		# The first button is the Next button to move to the
 		# next Question
-		self.right_btn.config(text="Uložit odpověď",command=self.send_answer_btn, width=10,bg="blue",fg="white",font=("ariel",16,"bold"))
+		next_button = Button(gui, text="Next",command=self.next_btn,
+		width=10,bg="blue",fg="white",font=("ariel",16,"bold"))
 		
 		# palcing the button on the screen
-		self.right_btn.place(x=350,y=380)
+		next_button.place(x=350,y=380)
 		
 		# This is the second button which is used to Quit the GUI
 		quit_button = Button(gui, text="Quit", command=gui.destroy,
@@ -90,84 +136,54 @@ class Quiz:
 		# placing the Quit button on the screen
 		quit_button.place(x=700,y=50)
 
+
 	# This method deselect the radio button on the screen
 	# Then it is used to display the options available for the current
 	# question which we obtain through the question number and Updates
 	# each of the options for the current question of the radio button.
-	def display_options(self, answers):
-		print(f"odpovedi: {answers}")
+	def display_options(self):
 		val=0
-		answers = answers.split('-')
+		
 		# deselecting the options
 		self.opt_selected.set(0)
 		
 		# looping over the options to be displayed for the
 		# text of the radio buttons.
-		for option in answers:
+		for option in options[self.q_no]:
 			self.opts[val]['text']=option
 			val+=1
 
 
-	def display_question(self, question):
-		self.text.config(text=question, width=60,font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
-	
-	def display_answer(self, answer):
-		self.text.config(text=f"Správná odpověď: {answer}.", width=60,font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
+	# This method shows the current Question on the screen
+	def display_question(self):
+		
+		# setting the Question properties
+		q_no = Label(gui, text=question[self.q_no], width=60,
+		font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
+		
+		#placing the option on the screen
+		q_no.place(x=70, y=100)
 
 	def display_menu(self):
-		self.client.connect()
-		thread = threading.Thread(target=self.client.recieve_from_server)
-		thread.start()
+		q_no = Label(gui, text="Menu", width=60, font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
+		q_no.place(x=70, y=100)
 
-		self.text = Label(gui, text="Menu", width=60, font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
-		self.text.place(x=350, y=100)
+		start_btn = Button(gui, text="Next",command=self.next_btn, width=10,bg="blue",fg="white",font=("ariel",16,"bold"))
 		
-		self.right_btn = Button(gui, text="Připojit se na server",command=self.client.request_id_player, width=20,bg="red",fg="white",font=("ariel",16,"bold"))
-		self.right_btn.place(x=400,y=380)
-
-	def display_room(self, num_players, admin, id = ''):
-		if admin:
-			self.text.config(text=f"Room ID - {id}\nPlayers: {num_players}/3", width=60, font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
-		else:
-			self.text.config(text=f"Room\nPlayers: {num_players}/3", width=60, font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
-		
-		self.text.place(x=350, y=100)
-
-		self.left_btn.config(width=0, text='')
-		self.left_btn.place(x=-100, y=-100)
-
-		self.text_input.place(x=-100, y=-100)
-		self.right_btn.place(x=-100, y=-100)
-
-		if admin:
-			self.right_btn.config(text="Start game",command=self.client.start_game, width=45,bg="red",fg="white",font=("ariel",16,"bold"))
-			self.right_btn.place(x=50,y=380)
-		else:
-			self.text_another.config(text="A teď počkej na zahájení hry adminem.", width=60, font=( 'ariel' ,22, 'bold' ), anchor= 'w' )
-			self.text_another.place(x=50,y=380)
-
-	def hide_menu(self):
-		pass
-
-	def connect_input(self):
-		self.text_input = Entry(gui)
-		self.text_input.place(x=350,y=250)
-
-		self.right_btn.configure(height=0, width=0)
-
-		self.right_btn.config(text="Připojit se do místnosti",command= lambda: self.client.connect_to_game(self.text_input.get()), width=20,bg="purple",fg="white",font=("ariel",16,"bold"))
-		self.left_btn.config(text="Vytvořit místnost",command= lambda: self.client.create_new_room(), width=20,bg="purple",fg="white",font=("ariel",16,"bold"))
-		self.right_btn.place(x=400,y=380)
-		self.left_btn.place(x=50,y=380)
+		# palcing the button on the screen
+		start_btn.place(x=350,y=380)
 
 	# This method is used to Display Title
 	def display_title(self):
 		
 		# The title to be shown
-		title = Label(gui, text="Kvíz", width=50, bg="pink",fg="white", font=("ariel", 20, "bold"))
+		title = Label(gui, text="GeeksforGeeks QUIZ",
+		width=50, bg="green",fg="white", font=("ariel", 20, "bold"))
 		
 		# place of the title
 		title.place(x=0, y=2)
+
+
 
 
 	# This method shows the radio buttons to select the Question
@@ -208,20 +224,17 @@ gui = Tk()
 gui.geometry("800x450")
 
 # set the title of the Window
-gui.title("Kvízeček pro pindíkový královny")
+gui.title("GeeksforGeeks Quiz")
 
 
 # get the data from the json file
-#with open('/home/jan/UPS/UPSSP/SP/data.json') as f:
-#	data = json.load(f)
-
-with open('/home/jan/Desktop/UPSSP-master/SP/data.json') as f:
+with open('/home/jan/UPS/UPSSP/SP/data.json') as f:
 	data = json.load(f)
 
 # set the question, options, and answer
 question = (data['question'])
 options = (data['options'])
-answer = (data['answer'])
+answer = (data[ 'answer'])
 
 # create an object of the Quiz Class.
 quiz = Quiz("Pepa")
