@@ -9,7 +9,7 @@ import threading
 import sys
 
 class Quiz:
-	def __init__(self):
+	def __init__(self, gui):
 		""" Metoda, která se zavolá při inicializaci nového objektu.
 		"""
 
@@ -22,9 +22,11 @@ class Quiz:
 		self.text = Label()
 		self.text_points = Label()
 		self.text_another = Label()
-		self.text_input = Entry()
+		self.text_input = Entry(textvariable='id mistnosti')
 		self.text_wrong = Label()
 		self.opt_selected = IntVar()
+		self.gui = gui
+		self.name_input= Entry(textvariable='prezdivka')
 
 		self.radio_buttons_array = []
 		for i in range(4):
@@ -41,8 +43,10 @@ class Quiz:
 		@param answers = odpovědi
 		"""
 
+		self.text_points.config(text="Body: ", width=60,font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
+		self.text_points.place(x=200,y=200)
 		self.right_btn.config(width=0, text='')
-		self.right_btn.place(x=-100, y=-100)
+		self.right_btn.place(x=-1000, y=-1000)
 		self.text_another.config(text='')
 		self.text.config(text='')
 		self.display_question(question)
@@ -67,7 +71,7 @@ class Quiz:
 		@param txt = chybová hláška
 		"""
 		self.text_wrong.config(text=txt, width=60,font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
-		self.text_wrong.place(x=200, y=200)
+		self.text_wrong.place(x=200, y=140)
 
 	def buttons(self):
 		""" Tlačítka pro uložení odpovědi a ukončení hry.
@@ -83,9 +87,9 @@ class Quiz:
 		""" Ukončení hry.
 		"""
 		self.client.leave_game()
-		
-		gui.destroy()
-		sys.exit(0)
+		self.client.soc.close()
+		self.gui.destroy()
+		self.gui.quit()
 
 	def display_options(self, answers):
 		""" Ukáže možné odpovědi.
@@ -121,9 +125,11 @@ class Quiz:
 		self.text = Label(gui, text="Menu", width=60, font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
 		self.text.place(x=350, y=100)
 
+		self.name_input.place(x=350, y=200)
+
 		self.text_points.config(text="", width=60,font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
 		
-		self.right_btn.config(text="Připojit se na server", command= lambda: self.client.request_id_player(), width=20, height=1,bg="red",fg="white",font=("ariel",16,"bold"))
+		self.right_btn.config(text="Připojit se na server", command= lambda: self.client.request_id_player(self.name_input.get()), width=20, height=1,bg="red",fg="white",font=("ariel",16,"bold"))
 		self.right_btn.place(x=400,y=380)
 
 	def display_room(self, num_players, admin, id = ''):
@@ -139,6 +145,8 @@ class Quiz:
 			self.text.config(text=f"Room\nPlayers: {num_players}/3", width=60, font=( 'ariel' ,16, 'bold' ), anchor= 'w' )
 		
 		self.text.place(x=350, y=100)
+		self.text_input.place(x=10000, y=10000)
+		self.name_input.place(x=10000, y=10000)
 
 		self.left_btn.config(width=0, text='')
 		self.left_btn.place(x=-100, y=-100)
@@ -178,6 +186,7 @@ class Quiz:
 
 		self.text_another.config(text='')
 		self.text.config(text='Menu\n                   ')
+		self.text_input.place(x=10000, y=10000)
 
 		self.right_btn.config(text="Připojit se do místnosti",command= lambda: self.client.connect_to_game(self.text_input.get()), width=20, height=1,bg="purple",fg="white",font=("ariel",16,"bold"))
 		self.left_btn.config(text="Vytvořit místnost",command= lambda: self.client.create_new_room(), width=20, height=1,bg="purple",fg="white",font=("ariel",16,"bold"))
@@ -218,7 +227,7 @@ gui.geometry("820x460")
 gui.title("Kvízeček")
 
 #vytvoří objekt
-quiz = Quiz()
+quiz = Quiz(gui)
 gui.protocol("WM_DELETE_WINDOW", quiz.close_window)
 
 #zapne gui

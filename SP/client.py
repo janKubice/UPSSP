@@ -11,8 +11,8 @@ class Client:
     def __init__(self, gui) -> None:
         """ Konstruktor, který připraví základní věci pro připojení.
         """
-        self.HOST = '127.0.0.1'  # adresa serveru
-        self.PORT = 10000        # port využívaný serverem
+        self.HOST = '147.228.67.109'  # adresa serveru
+        self.PORT = 10017        # port využívaný serverem
         self.id = -1
         self.gui = gui
 
@@ -36,15 +36,23 @@ class Client:
         """
         msg = f'{self.id},{msg_code},{msg_param}'
         print(f'Na server odesilam: {msg}')
-        self.soc.sendall(msg.encode())
+        try:
+            self.soc.sendall(msg.encode())
+        except:
+            self.gui.show_wrong_label('Server nefunguje.')
 
     def recieve_from_server(self):
         """Přijímání zpráv ze serveru
         """
         while(True):
             data = ''
-            data = self.soc.recv(512)
+            try:
+                data = self.soc.recv(512)
+            except:
+                return
+
             data = data.decode()
+            print(f'Přijímám: {data}')
             data = data.split(',')
             data = [s.rstrip('\x00') for s in data]
             try:
@@ -92,10 +100,10 @@ class Client:
 
 #-----------------------------------------------------
 
-    def request_id_player(self):
+    def request_id_player(self, name):
         """Žádá server o přiřazení id hráče
         """
-        self.send_msg(str(REQ_ID))
+        self.send_msg(str(REQ_ID), name)
 
     def set_player_id(self, id):
         if id == None or id == -1:
