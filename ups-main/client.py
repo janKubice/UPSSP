@@ -129,15 +129,22 @@ class Client:
         self.send_msg(str(REQ_ID), sendingmsg)
 
     def set_player_id(self, id):
-        if id == None or id == -1:
-            return
+        try:
 
-        self.thread_ping = threading.Thread(target=self.ping)
-        self.thread_ping.start()
+            if id == None or id == -1:
+                return
 
-        print(f'Nastavuji id hráče na {id}')
-        self.id = id
-        self.gui.connect_input()
+            self.thread_ping = threading.Thread(target=self.ping)
+            self.thread_ping.start()
+
+            print(f'Nastavuji id hráče na {id}')
+            self.id = id
+            self.gui.connect_input()
+
+        except:
+            self.gui.show_wrong_label("Nepovedlo se získat id")
+            print("Nepovedlo se získat id")
+
 
 #-----------------------------------------------------
 
@@ -158,14 +165,20 @@ class Client:
     def receive_create_new_room(self, msg):
         """ Získá odpověď ze serveru, zda se podařilo nebo nepodařilo vytvořit místnost.
         """
-        msg = msg.split(';')
-        print(msg)
-        if int(msg[0]) > -1:
-            self.gui.display_room(msg[1], True, int(msg[0]))
-        else:
+        try:
+            msg = msg.split(';')
+            print(msg)
+            if int(msg[0]) > -1:
+                self.gui.display_room(msg[1], True, int(msg[0]))
+            else:
+                msg = "Nepodařilo se vytvořit místnost"
+                self.gui.show_wrong_label(msg)
+                pass
+        except:
             msg = "Nepodařilo se vytvořit místnost"
             self.gui.show_wrong_label(msg)
             pass
+
 
 #-----------------------------------------------------
 
@@ -177,8 +190,14 @@ class Client:
     def receive_start_game(self, msg:str):
         """ Získá první otázku a možné odpovědi ze serveru.
         """
-        msg = msg.split(';')
-        self.gui.show_q(msg[0], msg[1])
+        try:
+            msg = msg.split(';')
+            self.gui.show_q(msg[0], msg[1])
+        except:
+            msg = "Nepodařilo se získat první otázku"
+            self.gui.show_wrong_label(msg)
+            pass
+
 
     def receive_next_question(self, msg:str):
         """ Získá další otázku a možné odpovědi.
